@@ -6,3 +6,9 @@ requests>=2.31.0
 colorama>=0.4.6
 jinja2>=3.1.3
 Pillow>=10.3.0          # optionnel — extraction EXIF images (metadata_extractor.py)
+
+# PenBox (GUI desktop) — nécessite un interpréteur 64 bits, voir setup.bat/setup.sh
+PySide6>=6.7
+PyYAML>=6.0
+paramiko>=3.4          # rapatriement de fichiers/dossiers distants via SFTP
+psutil>=5.9             # widget de ressources (CPU/RAM) dans la barre de statut

@@ -23,6 +23,7 @@
    python port_scanner.py -t 192.168.1.1
    python port_scanner.py -t exemple.com -p 1-1024 -T 200 -o resultats.txt
    python port_scanner.py -t 10.0.0.5 -p 22,80,443,8080 --timeout 2
+   python port_scanner.py -t 192.168.1.1 -o resultats.txt --json
 
  OPTIONS
  -------
@@ -33,6 +34,7 @@
    -o, --output    Fichier de sortie pour les résultats (optionnel)
    -b, --banner    Activer la récupération de bannières (peut ralentir le scan)
    -v, --verbose   Afficher également les ports fermés
+   --json          Exporter également en JSON
 
  AVERTISSEMENT LÉGAL
  --------------------
@@ -44,6 +46,7 @@
 import socket
 import threading
 import argparse
+import json
 import sys
 import time
 from queue import Queue
@@ -168,6 +171,7 @@ def main():
     parser.add_argument("-o", "--output",  help="Fichier de sortie")
     parser.add_argument("-b", "--banner",  action="store_true", help="Récupérer les bannières de service")
     parser.add_argument("-v", "--verbose", action="store_true", help="Afficher les ports fermés")
+    parser.add_argument("--json",          action="store_true", help="Exporter en JSON")
     args = parser.parse_args()
 
     # Résolution DNS
@@ -226,6 +230,18 @@ def main():
                     f.write(f"\n  Bannière: {r['banner']}")
                 f.write("\n")
         print(green(f"\nRésultats sauvegardés dans : {args.output}"))
+
+    if args.json:
+        json_path = (args.output.rsplit(".", 1)[0] + ".json") if args.output else f"port_scanner_{args.target}.json"
+        with open(json_path, "w", encoding="utf-8") as f:
+            json.dump({
+                "target": args.target,
+                "ip": ip,
+                "date": datetime.now().isoformat(),
+                "ports_scanned": args.ports,
+                "results": open_ports,
+            }, f, indent=2, ensure_ascii=False)
+        print(green(f"[+] JSON sauvegardé : {json_path}"))
 
 
 if __name__ == "__main__":

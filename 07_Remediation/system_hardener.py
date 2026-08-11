@@ -115,7 +115,8 @@ def run_cmd(cmd: str | list, timeout: int = 10) -> tuple[int, str, str]:
     try:
         result = subprocess.run(
             cmd, shell=isinstance(cmd, str),
-            capture_output=True, text=True, timeout=timeout
+            capture_output=True, text=True, timeout=timeout,
+            creationflags=subprocess.CREATE_NO_WINDOW if OS == "windows" else 0,
         )
         return result.returncode, result.stdout.strip(), result.stderr.strip()
     except subprocess.TimeoutExpired:

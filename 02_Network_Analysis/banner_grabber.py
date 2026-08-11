@@ -32,6 +32,7 @@
    --timeout       Timeout en secondes (défaut: 3.0)
    -o, --output    Fichier de sortie
    -v, --verbose   Afficher aussi les ports sans bannière
+   --json          Exporter également en JSON
 
  PROBES INTÉGRÉES
  ----------------
@@ -46,6 +47,7 @@
 """
 
 import argparse
+import json
 import socket
 import ssl
 import sys
@@ -108,33 +110,42 @@ print_lock = threading.Lock()
 # ─── Fonctions ───────────────────────────────────────────────────────────────
 
 def grab(host: str, port: int, timeout: float) -> str:
-    """Tente de grabber la bannière d'un port. Gère HTTP(S) et TCP brut."""
+    """Tente de grabber la bannière d'un port. Gère HTTP(S) et TCP brut.
+
+    Deux phases distinctes : une erreur/timeout à la connexion (port fermé,
+    filtré, ou hôte qui ne répond pas) doit compter comme port fermé (None),
+    alors qu'une erreur/timeout après connexion réussie (probe envoyée, pas
+    de réponse) veut dire port ouvert mais silencieux ("") — les confondre
+    faisait remonter en masse des ports fermés/filtrés comme "ouverts"."""
     try:
-        # SSL pour 443, 8443, 993, 995
-        if port in (443, 8443, 993, 995):
+        use_ssl = port in (443, 8443, 993, 995)
+        raw = socket.create_connection((host, port), timeout=timeout)
+        if use_ssl:
             ctx = ssl.create_default_context()
             ctx.check_hostname = False
             ctx.verify_mode = ssl.CERT_NONE
-            with socket.create_connection((host, port), timeout=timeout) as raw:
-                with ctx.wrap_socket(raw, server_hostname=host) as s:
-                    probe_fn = PORT_PROBES.get(port, generic_probe)
-                    probe = probe_fn(host, port) if callable(probe_fn) else probe_fn
-                    if probe:
-                        s.sendall(probe)
-                    return s.recv(2048).decode("utf-8", errors="ignore").strip()
+            try:
+                s = ctx.wrap_socket(raw, server_hostname=host)
+            except Exception:
+                raw.close()
+                return None
         else:
-            with socket.create_connection((host, port), timeout=timeout) as s:
-                probe_fn = PORT_PROBES.get(port, generic_probe)
-                probe = probe_fn(host, port) if callable(probe_fn) else probe_fn
-                if probe:
-                    s.sendall(probe)
+            s = raw
+    except OSError:
+        return None  # Port fermé / filtré / hôte injoignable
+
+    try:
+        with s:
+            probe_fn = PORT_PROBES.get(port, generic_probe)
+            probe = probe_fn(host, port) if callable(probe_fn) else probe_fn
+            if probe:
+                s.sendall(probe)
+            if not use_ssl:
                 time.sleep(0.3)
-                s.settimeout(timeout)
-                return s.recv(2048).decode("utf-8", errors="ignore").strip()
-    except ConnectionRefusedError:
-        return None  # Port fermé
+            s.settimeout(timeout)
+            return s.recv(2048).decode("utf-8", errors="ignore").strip()
     except Exception:
-        return ""
+        return ""  # Connecté mais pas de bannière reçue
 
 
 def scan_port(host: str, ip: str, port: int, timeout: float, verbose: bool) -> None:
@@ -193,6 +204,7 @@ def main():
     parser.add_argument("--timeout",       type=float, default=3.0, help="Timeout (s, défaut: 3)")
     parser.add_argument("-o", "--output",  help="Fichier de sortie")
     parser.add_argument("-v", "--verbose", action="store_true", help="Afficher les ports fermés")
+    parser.add_argument("--json",          action="store_true", help="Exporter en JSON")
     args = parser.parse_args()
 
     try:
@@ -238,6 +250,18 @@ def main():
             for r in results:
                 f.write(f"Port {r['port']}/TCP :\n{r['banner']}\n\n{'─'*50}\n\n")
         print(green(f"[+] Sauvegardé : {args.output}"))
+
+    if args.json:
+        json_path = (args.output.rsplit(".", 1)[0] + ".json") if args.output else f"banner_grabber_{args.target}.json"
+        with open(json_path, "w", encoding="utf-8") as f:
+            json.dump({
+                "target": args.target,
+                "ip": ip,
+                "date": datetime.now().isoformat(),
+                "ports_scanned": args.ports,
+                "results": results,
+            }, f, indent=2, ensure_ascii=False)
+        print(green(f"[+] JSON sauvegardé : {json_path}"))
 
 
 if __name__ == "__main__":

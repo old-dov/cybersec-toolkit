@@ -85,7 +85,8 @@ python cybersec_launcher.py --list   # Catalogue complet
 └── 12_Forensic_IR/                 # Investigation numérique / Réponse aux incidents
     ├── ioc_scanner.py              # Scanner d'IOC (hachages, IPs, domaines malveillants)
     ├── timeline_builder.py         # Timeline forensique des fichiers (mtime/ctime/atime)
-    └── artifact_collector.py       # Collecte d'artefacts système (logs, cron, réseau…)
+    ├── artifact_collector.py       # Collecte d'artefacts système (logs, cron, réseau…)
+    └── memory_dump.py              # Dump mémoire d'un processus (Windows .dmp / Linux /proc)
 ```
 
 ---

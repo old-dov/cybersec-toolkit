@@ -192,7 +192,8 @@ def get_active_connections() -> list:
     try:
         if os_name == "Windows":
             out = subprocess.check_output(
-                ["netstat", "-n", "-o"], text=True, stderr=subprocess.DEVNULL
+                ["netstat", "-n", "-o"], text=True, stderr=subprocess.DEVNULL,
+                creationflags=subprocess.CREATE_NO_WINDOW,
             )
         else:
             out = subprocess.check_output(

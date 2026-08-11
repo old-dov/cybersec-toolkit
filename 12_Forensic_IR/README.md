@@ -58,6 +58,21 @@ python artifact_collector.py -o artifacts/          # Dossier de sortie
 
 ---
 
+### `memory_dump.py` — Dump mémoire d'un processus
+
+Capture la mémoire d'un processus en cours pour analyse forensique différée (secrets en clair, artefacts volatils). Windows via `MiniDumpWriteDump` (format `.dmp` standard, compatible WinDbg/Volatility3) ; Linux via `/proc/<pid>/mem` (dump brut + `.maps` sidecar). macOS non supporté (restrictions SIP).
+
+**Usage :**
+```bash
+python memory_dump.py --target 4821                 # par PID
+python memory_dump.py --target notepad.exe           # par nom de processus
+python memory_dump.py --target sshd -o /tmp/ir/sshd.raw
+```
+
+> ⚠️ Le fichier produit peut contenir des secrets en clair (mots de passe, clés, tokens) — à traiter comme une donnée sensible.
+
+---
+
 ## Pipeline IR recommandé
 
 ```

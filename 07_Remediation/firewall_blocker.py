@@ -112,7 +112,8 @@ def detect_engine() -> str:
     # Linux : préférer nftables si disponible
     for cmd in ("nft", "iptables"):
         try:
-            subprocess.run([cmd, "--version"], capture_output=True, check=False)
+            subprocess.run([cmd, "--version"], capture_output=True, check=False,
+                            creationflags=subprocess.CREATE_NO_WINDOW if OS == "windows" else 0)
             return "nftables" if cmd == "nft" else "iptables"
         except FileNotFoundError:
             continue
@@ -261,7 +262,8 @@ def run_command(cmd: str, dry_run: bool) -> bool:
         return True
     try:
         result = subprocess.run(
-            cmd, shell=True, capture_output=True, text=True
+            cmd, shell=True, capture_output=True, text=True,
+            creationflags=subprocess.CREATE_NO_WINDOW if OS == "windows" else 0,
         )
         if result.returncode == 0:
             print(green(f"  [✓] {cmd}"))

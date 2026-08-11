@@ -33,6 +33,7 @@
    --timeout       Timeout DNS en secondes (défaut: 2.0)
    -o, --output    Fichier de sortie
    -v, --verbose   Afficher les tentatives en cours
+   --json          Exporter également en JSON
 
  WORDLISTS RECOMMANDÉES
  ----------------------
@@ -48,6 +49,7 @@
 """
 
 import argparse
+import json
 import sys
 import threading
 import time
@@ -158,6 +160,7 @@ def main():
     parser.add_argument("--timeout",        type=float, default=2.0, help="Timeout DNS (s)")
     parser.add_argument("-o", "--output",   help="Fichier de sortie")
     parser.add_argument("-v", "--verbose",  action="store_true", help="Mode verbeux")
+    parser.add_argument("--json",           action="store_true", help="Exporter en JSON")
     args = parser.parse_args()
 
     # Chargement de la wordlist
@@ -211,6 +214,17 @@ def main():
             for r in found:
                 f.write(f"{r['fqdn']}  {r['type']}  {', '.join(r['records'])}\n")
         print(green(f"\nRésultats sauvegardés : {args.output}"))
+
+    if args.json:
+        json_path = (args.output.rsplit(".", 1)[0] + ".json") if args.output else f"subdomain_enum_{args.domain}.json"
+        with open(json_path, "w", encoding="utf-8") as f:
+            json.dump({
+                "domain": args.domain,
+                "date": datetime.now().isoformat(),
+                "tested": counter["total"],
+                "results": found,
+            }, f, indent=2, ensure_ascii=False)
+        print(green(f"[+] JSON sauvegardé : {json_path}"))
 
 
 if __name__ == "__main__":

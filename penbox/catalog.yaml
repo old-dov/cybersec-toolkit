@@ -1,0 +1,368 @@
+# Registre des scripts wrappés par PenBox.
+#
+# input_mode:
+#   target       - une valeur unique passée via target_flag, choisie dans le panneau Cibles
+#   multi_target - plusieurs valeurs (nargs+) via target_flag, sélection multiple de Cibles
+#   file_input   - un chemin de fichier (souvent un JSON produit par un run précédent) via target_flag
+#   payload      - une chaîne libre saisie par l'utilisateur (pas une Cible), via target_flag
+#   none         - aucune cible : audit/génération locale, lancé tel quel
+#
+# json_mode:
+#   flag   - le script a un flag --json ; le runner ajoute --json + output_flag <chemin>.json
+#   inline - -o seul produit déjà du JSON ; le runner ajoute juste output_flag <chemin>.json
+#   none   - pas de sortie JSON exploitable (texte/config/script généré) ; pas de findings normalisés
+#
+# extra_args: jetons littéraux insérés juste après le chemin du script (ex. sous-commande obligatoire)
+
+- id: port_scanner
+  path: 01_Reconnaissance/port_scanner.py
+  category: recon
+  desc: Scan des ports TCP ouverts, service et bannière par port.
+  input_mode: target
+  target_flag: -t
+  target_type: host
+  json_mode: flag
+  default_timeout_s: 120
+
+- id: subdomain_enum
+  path: 01_Reconnaissance/subdomain_enum.py
+  category: recon
+  desc: Énumération de sous-domaines par dictionnaire (DNS A/AAAA/CNAME).
+  input_mode: target
+  target_flag: -d
+  target_type: domain
+  json_mode: flag
+  produces_targets: true
+  default_timeout_s: 180
+
+- id: whois_lookup
+  path: 01_Reconnaissance/whois_lookup.py
+  category: recon
+  desc: Informations WHOIS (registrar, dates, contacts, serveurs de noms).
+  input_mode: target
+  target_flag: -t
+  target_type: host
+  json_mode: flag
+  default_timeout_s: 30
+
+- id: network_mapper
+  path: 02_Network_Analysis/network_mapper.py
+  category: network
+  desc: Cartographie des hôtes actifs sur un réseau local (ping/TCP fallback).
+  input_mode: target
+  target_flag: -n
+  target_type: cidr
+  json_mode: flag
+  produces_targets: true
+  default_timeout_s: 180
+
+- id: dns_analyzer
+  path: 02_Network_Analysis/dns_analyzer.py
+  category: network
+  desc: Analyse DNS complète (A, MX, TXT/SPF, NS...).
+  input_mode: target
+  target_flag: -d
+  target_type: domain
+  json_mode: flag
+  default_timeout_s: 30
+
+- id: banner_grabber
+  path: 02_Network_Analysis/banner_grabber.py
+  category: network
+  desc: Récupération de bannières de service sur des ports TCP.
+  input_mode: target
+  target_flag: -t
+  target_type: host
+  # -p/--ports est obligatoire côté script (pas de valeur par défaut) ;
+  # on fournit ici les ports couverts par les sondes intégrées (PORT_PROBES).
+  extra_args: [-p, "21,22,23,25,80,110,143,443,587,993,995,3306,5432,6379,8080,8443"]
+  json_mode: flag
+  default_timeout_s: 90
+
+- id: ssl_checker
+  path: 03_Vulnerability_Assessment/ssl_checker.py
+  category: vulnassess
+  desc: Audit du certificat et de la configuration SSL/TLS.
+  input_mode: target
+  target_flag: -t
+  target_type: host
+  port_flag: -p
+  default_port: 443
+  json_mode: flag
+  default_timeout_s: 30
+
+- id: http_headers_analyzer
+  path: 03_Vulnerability_Assessment/http_headers_analyzer.py
+  category: vulnassess
+  desc: Analyse des en-têtes de sécurité HTTP et fuites d'information.
+  input_mode: target
+  target_flag: -u
+  target_type: url
+  json_mode: flag
+  default_timeout_s: 30
+
+- id: open_redirect_checker
+  path: 03_Vulnerability_Assessment/open_redirect_checker.py
+  category: vulnassess
+  desc: >-
+    Détection de redirections ouvertes. L'URL cible doit contenir le
+    marqueur littéral "PAYLOAD" à la place du paramètre testé
+    (ex: https://site.com/go?next=PAYLOAD).
+  input_mode: target
+  target_flag: -u
+  target_type: url
+  json_mode: flag
+  default_timeout_s: 60
+
+- id: log_parser
+  path: 04_Log_Analysis/log_parser.py
+  category: logs
+  desc: Analyse de logs (Apache/auth/syslog), IPs et motifs suspects.
+  input_mode: target
+  target_flag: -f
+  target_type: file
+  json_mode: flag
+  default_timeout_s: 60
+
+- id: failed_login_detector
+  path: 04_Log_Analysis/failed_login_detector.py
+  category: logs
+  desc: Détection de brute-force par analyse des tentatives de connexion échouées.
+  input_mode: target
+  target_flag: -f
+  target_type: file
+  json_mode: flag
+  default_timeout_s: 60
+
+- id: hash_generator
+  path: 05_Cryptography/hash_generator.py
+  category: crypto
+  desc: Calcul de hash de fichier (MD5/SHA/BLAKE2).
+  input_mode: target
+  target_flag: -f
+  target_type: file
+  extra_args: [hash]
+  json_mode: none
+  default_timeout_s: 60
+
+- id: file_encryptor
+  path: 05_Cryptography/file_encryptor.py
+  category: crypto
+  desc: >-
+    Chiffrement AES-256-GCM d'un fichier (mode "encrypt" uniquement en
+    exécution rapide ; "decrypt" reste disponible en CLI directe).
+  input_mode: target
+  target_flag: -i
+  target_type: file
+  extra_args: [encrypt]
+  json_mode: none
+  default_timeout_s: 60
+
+- id: firewall_blocker
+  path: 07_Remediation/firewall_blocker.py
+  category: remediation
+  desc: Génère un script de blocage pare-feu pour une liste d'IPs (dry-run par défaut).
+  input_mode: multi_target
+  target_flag: --ips
+  target_type: ip
+  json_mode: none
+  default_timeout_s: 30
+
+- id: system_hardener
+  path: 07_Remediation/system_hardener.py
+  category: remediation
+  desc: Audit de durcissement du système local (SSH, sysctl, comptes, services).
+  input_mode: none
+  json_mode: flag
+  default_timeout_s: 60
+
+- id: ssl_hardening_config
+  path: 07_Remediation/ssl_hardening_config.py
+  category: remediation
+  desc: Génère une configuration TLS durcie (nginx/apache/haproxy) pour un domaine.
+  input_mode: target
+  target_flag: --domain
+  target_type: domain
+  json_mode: none
+  default_timeout_s: 30
+
+- id: harden_http_headers
+  path: 07_Remediation/harden_http_headers.py
+  category: remediation
+  desc: Génère les en-têtes de sécurité manquants à partir d'un scan http_headers_analyzer.
+  input_mode: file_input
+  target_flag: --json
+  target_type: file
+  json_mode: none
+  default_timeout_s: 30
+
+- id: patch_manager
+  path: 07_Remediation/patch_manager.py
+  category: remediation
+  desc: Audit des paquets système obsolètes/vulnérables (mode audit local).
+  input_mode: none
+  json_mode: inline
+  default_timeout_s: 60
+
+- id: metadata_cleaner
+  path: 07_Remediation/metadata_cleaner.py
+  category: remediation
+  desc: Nettoie les métadonnées sensibles des fichiers d'un répertoire.
+  input_mode: target
+  target_flag: --dir
+  target_type: dir
+  json_mode: none
+  default_timeout_s: 60
+
+- id: web_vuln_patcher
+  path: 07_Remediation/web_vuln_patcher.py
+  category: remediation
+  desc: >-
+    Génère des règles WAF génériques (OWASP). Le chaînage depuis les
+    scans sqli_detector/xss_scanner (--sqli/--xss) reste disponible en CLI.
+  input_mode: none
+  extra_args: [--harden-all]
+  json_mode: none
+  default_timeout_s: 30
+
+- id: exploit_suggester
+  path: 08_Exploitation/exploit_suggester.py
+  category: exploit
+  desc: Suggestions de CVE (API NVD) à partir d'un JSON banner_grabber.
+  input_mode: file_input
+  target_flag: --json
+  target_type: file
+  json_mode: inline
+  default_timeout_s: 60
+
+- id: payload_encoder
+  path: 08_Exploitation/payload_encoder.py
+  category: exploit
+  desc: Encodage multi-format d'un payload (base64/url/hex/unicode...).
+  input_mode: payload
+  target_flag: --input
+  json_mode: inline
+  default_timeout_s: 15
+
+- id: env_secrets_scanner
+  path: 09_Post_Exploitation/env_secrets_scanner.py
+  category: privesc
+  desc: Scan d'un répertoire à la recherche de secrets exposés (clés, tokens, .env).
+  input_mode: target
+  target_flag: --path
+  target_type: dir
+  json_mode: inline
+  # Sort avec le code 1 quand des secrets sont trouvés (convention type grep),
+  # pas seulement en cas d'erreur.
+  nonzero_exit_ok: true
+  default_timeout_s: 90
+
+- id: privesc_checker
+  path: 09_Post_Exploitation/privesc_checker.py
+  category: privesc
+  desc: Audit d'élévation de privilèges local (SUID/sudo/cron, ou équivalents Windows).
+  input_mode: none
+  json_mode: flag
+  # Sort avec le code 1 si des findings critical/high sont trouvés, pas
+  # seulement en cas d'erreur.
+  nonzero_exit_ok: true
+  default_timeout_s: 60
+
+- id: sqli_detector
+  path: 10_Web_Security/sqli_detector.py
+  category: web
+  desc: >-
+    Détection d'injection SQL. L'URL doit contenir le marqueur littéral
+    "INJECT" à la place du paramètre testé.
+  input_mode: target
+  target_flag: --url
+  target_type: url
+  json_mode: inline
+  default_timeout_s: 90
+
+- id: xss_scanner
+  path: 10_Web_Security/xss_scanner.py
+  category: web
+  desc: Scan de XSS réfléchi sur une URL (et ses formulaires en option).
+  input_mode: target
+  target_flag: --url
+  target_type: url
+  json_mode: inline
+  default_timeout_s: 90
+
+- id: dir_bruteforcer
+  path: 10_Web_Security/dir_bruteforcer.py
+  category: web
+  desc: Découverte de fichiers/répertoires cachés par brute-force.
+  input_mode: target
+  target_flag: --url
+  target_type: url
+  json_mode: inline
+  default_timeout_s: 180
+
+- id: email_harvester
+  path: 11_OSINT/email_harvester.py
+  category: osint
+  desc: Collecte d'adresses email publiques associées à un domaine.
+  input_mode: target
+  target_flag: --domain
+  target_type: domain
+  json_mode: inline
+  default_timeout_s: 90
+
+- id: username_checker
+  path: 11_OSINT/username_checker.py
+  category: osint
+  desc: Vérifie l'existence d'un nom d'utilisateur sur ~35 plateformes.
+  input_mode: target
+  target_flag: --username
+  target_type: username
+  json_mode: inline
+  default_timeout_s: 90
+
+- id: metadata_extractor
+  path: 11_OSINT/metadata_extractor.py
+  category: osint
+  desc: Extrait les métadonnées EXIF/PDF/Office d'un répertoire de documents.
+  input_mode: target
+  target_flag: --dir
+  target_type: dir
+  json_mode: inline
+  default_timeout_s: 60
+
+- id: ioc_scanner
+  path: 12_Forensic_IR/ioc_scanner.py
+  category: forensic
+  desc: Scan d'indicateurs de compromission (hashes/IPs/domaines) à partir d'un fichier IOC.
+  input_mode: file_input
+  target_flag: --ioc-file
+  target_type: file
+  json_mode: inline
+  default_timeout_s: 120
+
+- id: timeline_builder
+  path: 12_Forensic_IR/timeline_builder.py
+  category: forensic
+  desc: Construit une timeline forensique des modifications de fichiers.
+  input_mode: target
+  target_flag: --path
+  target_type: dir
+  json_mode: inline
+  default_timeout_s: 90
+
+- id: artifact_collector
+  path: 12_Forensic_IR/artifact_collector.py
+  category: forensic
+  desc: Collecte d'artefacts système (logs, historique, réseau, processus...) locaux.
+  input_mode: none
+  json_mode: none
+  default_timeout_s: 120
+
+- id: memory_dump
+  path: 12_Forensic_IR/memory_dump.py
+  category: forensic
+  desc: Dump mémoire d'un processus (PID ou nom) — Windows (.dmp) et Linux (/proc), macOS non supporté.
+  input_mode: payload
+  target_flag: --target
+  json_mode: none
+  default_timeout_s: 180

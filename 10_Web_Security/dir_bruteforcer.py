@@ -184,7 +184,8 @@ def worker(session, q: queue.Queue, codes: set, timeout: int,
             size_str = f"{result['size']:>8} B"
             redir = f"→ {result['redirect']}" if result["redirect"] else ""
             with _lock:
-                print(f"  {col(f'[{result[\"code\"]}]')}  {bold(result['url'])}  {dim(size_str)}  {dim(redir)}")
+                code_str = col(f"[{result['code']}]")
+                print(f"  {code_str}  {bold(result['url'])}  {dim(size_str)}  {dim(redir)}")
                 _found.append(result)
         q.task_done()
 

@@ -33,6 +33,7 @@
    --tcp-fallback      Utiliser TCP si ICMP échoue (ports: 22,80,443,445)
    -p, --tcp-ports     Ports TCP pour le fallback (défaut: 22,80,443,445)
    -o, --output        Fichier de sortie
+   --json              Exporter également en JSON
 
  AVERTISSEMENT LÉGAL
  --------------------
@@ -43,6 +44,7 @@
 
 import argparse
 import ipaddress
+import json
 import platform
 import socket
 import subprocess
@@ -90,6 +92,7 @@ def ping(ip: str, timeout: int) -> bool:
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
             timeout=timeout + 2,
+            creationflags=subprocess.CREATE_NO_WINDOW if IS_WINDOWS else 0,
         )
         return result.returncode == 0
     except Exception:
@@ -155,6 +158,7 @@ def main():
     parser.add_argument("--tcp-fallback",    action="store_true", help="TCP fallback si ICMP bloqué")
     parser.add_argument("-p", "--tcp-ports", default="22,80,443,445", help="Ports TCP pour fallback")
     parser.add_argument("-o", "--output",    help="Fichier de sortie")
+    parser.add_argument("--json",            action="store_true", help="Exporter en JSON")
     args = parser.parse_args()
 
     try:
@@ -208,6 +212,17 @@ def main():
             for h in alive_hosts:
                 f.write(f"{h['ip']:<18}  {h['hostname']}\n")
         print(green(f"\n[+] Résultats sauvegardés : {args.output}"))
+
+    if args.json:
+        json_path = (args.output.rsplit(".", 1)[0] + ".json") if args.output else f"network_mapper_{args.network.replace('/', '_')}.json"
+        with open(json_path, "w", encoding="utf-8") as f:
+            json.dump({
+                "network": args.network,
+                "date": datetime.now().isoformat(),
+                "hosts_tested": len(hosts),
+                "results": alive_hosts,
+            }, f, indent=2, ensure_ascii=False)
+        print(green(f"[+] JSON sauvegardé : {json_path}"))
 
 
 if __name__ == "__main__":

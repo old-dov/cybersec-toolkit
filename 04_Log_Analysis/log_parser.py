@@ -92,7 +92,7 @@ SUSPICIOUS_PATTERNS = {
         r"zgrab|nuclei|acunetix|openvas)", re.I
     ),
     "Credential Stuffing": re.compile(
-        r"(password=|passwd=|pwd=|login=).*admin|root|test|guest", re.I
+        r"(password=|passwd=|login=).*(admin|root|test|guest)", re.I
     ),
 }
 

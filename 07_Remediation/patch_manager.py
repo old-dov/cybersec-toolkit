@@ -151,7 +151,8 @@ def detect_manager() -> str | None:
     for mgr in priority:
         try:
             subprocess.check_output(
-                [mgr, "--version"], stderr=subprocess.DEVNULL
+                [mgr, "--version"], stderr=subprocess.DEVNULL,
+                creationflags=subprocess.CREATE_NO_WINDOW if OS_NAME == "Windows" else 0,
             )
             return mgr
         except Exception:
@@ -164,7 +165,8 @@ def run_cmd(cmd: list, dry_run: bool) -> tuple[int, str]:
         return 0, f"[DRY-RUN] {' '.join(cmd)}"
     try:
         out = subprocess.run(
-            cmd, capture_output=True, text=True, timeout=300
+            cmd, capture_output=True, text=True, timeout=300,
+            creationflags=subprocess.CREATE_NO_WINDOW if OS_NAME == "Windows" else 0,
         )
         return out.returncode, out.stdout + out.stderr
     except Exception as e:

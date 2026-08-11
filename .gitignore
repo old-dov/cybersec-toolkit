@@ -13,6 +13,14 @@ venv/
 env/
 .env
 .venv/
+.venv-penbox/
+penbox_runtime/
+installer_output/
+.penbox_runs/
+.penbox_fetched/
+.penbox_known_hosts
+.penbox_vault.enc
+penbox.db
 
 # Fichiers de sortie des scripts
 *.json

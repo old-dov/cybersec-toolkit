@@ -85,7 +85,8 @@ def run_cmd(args: list) -> str:
     """Exécute une commande et retourne sa sortie texte."""
     try:
         return subprocess.check_output(
-            args, text=True, stderr=subprocess.DEVNULL, timeout=15
+            args, text=True, stderr=subprocess.DEVNULL, timeout=15,
+            creationflags=subprocess.CREATE_NO_WINDOW if OS == "Windows" else 0,
         )
     except Exception:
         return ""
