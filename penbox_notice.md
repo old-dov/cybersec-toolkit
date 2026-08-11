@@ -4,17 +4,21 @@ Interface graphique (PySide6) pour lancer et suivre les ~34 scripts de pentest d
 
 ## 1. Installation (une seule fois)
 
-Prérequis : [`uv`](https://docs.astral.sh/uv/) dans le PATH.
+**Si tu as installé PenBox via `PenBox-Setup-1.0.0.exe`** (cas le plus courant — c'est cette notice qui est fournie avec) : rien d'autre à faire. L'installateur embarque déjà un runtime Python autonome avec toutes les dépendances (`PySide6`, `PyYAML`, `paramiko`, `cryptography`, `psutil`...). Passe directement au §2.
+
+**Si tu lances PenBox depuis le dépôt source** (clone git, pour du développement) : prérequis [`uv`](https://docs.astral.sh/uv/) dans le PATH, puis à la racine du dépôt :
 
 ```
 setup.bat
 ```
 
-Ce script crée un venv dédié 64 bits (`.venv-penbox`) et installe les dépendances (`requirements.txt`, dont `PySide6`, `PyYAML`, `paramiko`, `cryptography`, `psutil`). Un venv dédié est nécessaire car PySide6 n'a pas de build 32 bits, et le Python système peut l'être.
+Ce script crée un venv dédié 64 bits (`.venv-penbox`) et installe les dépendances (`requirements.txt`). Un venv dédié est nécessaire car PySide6 n'a pas de build 32 bits, et le Python système peut l'être.
 
 ## 2. Lancer l'app
 
-Double-clic sur `penbox.bat` à la racine du dépôt. Il vérifie que `.venv-penbox` existe (sinon il demande de lancer `setup.bat` d'abord) puis démarre `penbox_app.py`.
+**Installation via l'installateur** — raccourci "PenBox" créé sur le Bureau et/ou dans le menu Démarrer.
+
+**Depuis le dépôt source** — double-clic sur `penbox.bat` à la racine du dépôt. Il vérifie que `.venv-penbox` existe (sinon il demande de lancer `setup.bat` d'abord) puis démarre `penbox_app.py`.
 
 Au tout premier lancement, un avertissement légal s'affiche une fois (mémorisé par utilisateur Windows, pas par projet). Refuser ferme l'app sans ouvrir la fenêtre principale.
 
@@ -130,7 +134,8 @@ Après un run réussi de `subdomain_enum` (→ nouveaux domaines) ou `network_ma
 
 ## 14. En cas de souci
 
-- App qui ne démarre pas → vérifier que `setup.bat` a bien tourné sans erreur et que `.venv-penbox\Scripts\python.exe` existe.
+- App qui ne démarre pas (installateur) → réinstaller via `PenBox-Setup-1.0.0.exe` ; le runtime Python est embarqué dans le dossier d'installation, aucune dépendance externe à installer.
+- App qui ne démarre pas (dépôt source) → vérifier que `setup.bat` a bien tourné sans erreur et que `.venv-penbox\Scripts\python.exe` existe.
 - Un script individuel plante en dehors de PenBox → il a probablement un vrai bug (comme `env_secrets_scanner.py` avant correctif) ; le reproduire en CLI direct dans `.venv-penbox` pour investiguer.
 - Fenêtre/process qui semble disparaître en étant minimisé → connu sur cette machine (comportement ASUS lié au system tray), le process continue de tourner, ce n'est pas un crash.
 - Mot de passe maître du coffre-fort oublié → aucune récupération possible (rien n'est stocké en clair) ; supprimer `.penbox_vault.enc` recrée un coffre vide au prochain accès à un profil.
